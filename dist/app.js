@@ -1,14 +1,5 @@
-// Validation
-interface Validatable {
-    value: string | number;
-    required?: boolean;
-    minLength?: number;
-    maxLength?: number;
-    min?: number;
-    max?: number;
-}
-
-function validate(validatebleInput: Validatable) {
+"use strict";
+function validate(validatebleInput) {
     let isValid = true;
     if (validatebleInput.required) {
         isValid = isValid && validatebleInput.value.toString().trim().length !== 0;
@@ -25,80 +16,56 @@ function validate(validatebleInput: Validatable) {
     if (validatebleInput.max != null && typeof validatebleInput.value === 'number') {
         isValid = isValid && validatebleInput.value < validatebleInput.max;
     }
-    return isValid
+    return isValid;
 }
-
 class ProjectInput {
-    templateElement: HTMLTemplateElement;
-    hostElement: HTMLDivElement;
-    element: HTMLFormElement;
-    titleInputElement: HTMLInputElement;
-    descriptionInputElement: HTMLInputElement;
-    peopleInputElement: HTMLInputElement;
-
     constructor() {
-        this.templateElement = document.getElementById('project-input')! as HTMLTemplateElement;
-        this.hostElement = document.getElementById('app')! as HTMLDivElement;
-
-        const importedNode = document.importNode(
-            this.templateElement.content, 
-            true);
-        this.element = importedNode.firstElementChild as HTMLFormElement;
+        this.templateElement = document.getElementById('project-input');
+        this.hostElement = document.getElementById('app');
+        const importedNode = document.importNode(this.templateElement.content, true);
+        this.element = importedNode.firstElementChild;
         this.element.id = 'user-input';
-
-        this.titleInputElement = this.element.querySelector('#title') as HTMLInputElement;
-        this.descriptionInputElement = this.element.querySelector('#description') as HTMLInputElement;
-        this.peopleInputElement = this.element.querySelector('#people') as HTMLInputElement;
-
+        this.titleInputElement = this.element.querySelector('#title');
+        this.descriptionInputElement = this.element.querySelector('#description');
+        this.peopleInputElement = this.element.querySelector('#people');
         this.configure();
         this.attach();
     }
-
-    private gatherUserInput(): [string, string, number] | void // returns the tuple
-    {
+    gatherUserInput() {
         const enteredTitle = this.titleInputElement.value;
         const enteredDescription = this.descriptionInputElement.value;
         const enteredPeople = this.peopleInputElement.value;
-
-        const titleValidatable: Validatable = {
+        const titleValidatable = {
             value: enteredTitle,
             required: true,
-        }
-        const descriptionValidatable: Validatable = {
+        };
+        const descriptionValidatable = {
             value: enteredDescription,
             required: true,
             minLength: 5,
-        }
-        const peopleValidatable: Validatable = {
+        };
+        const peopleValidatable = {
             value: +enteredPeople,
             required: true,
             min: 1,
             max: 5
-        }
-
-        if (
-            !validate(titleValidatable) ||
+        };
+        if (!validate(titleValidatable) ||
             !validate(descriptionValidatable) ||
-            !validate(peopleValidatable)
-        )
-        {
+            !validate(peopleValidatable)) {
             alert('invalid input');
             return;
         }
-        else
-        {
+        else {
             return [enteredTitle, enteredDescription, +enteredPeople];
         }
     }
-
-    private clearInputs()
-    {
+    clearInputs() {
         this.titleInputElement.value = '';
         this.descriptionInputElement.value = '';
         this.peopleInputElement.value = '';
     }
-
-    private submitHandler(event: Event) {
+    submitHandler(event) {
         event.preventDefault();
         const userInput = this.gatherUserInput();
         if (Array.isArray(userInput)) {
@@ -107,14 +74,12 @@ class ProjectInput {
             this.clearInputs();
         }
     }
-
-    private configure() {
+    configure() {
         this.element.addEventListener('submit', this.submitHandler.bind(this));
     }
-
-    private attach() {
+    attach() {
         this.hostElement.insertAdjacentElement('afterbegin', this.element);
     }
 }
-
 const projectInput = new ProjectInput();
+//# sourceMappingURL=app.js.map
