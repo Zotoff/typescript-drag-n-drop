@@ -1,3 +1,61 @@
+// Crete Project type
+enum ProjectStatus {
+    Active,
+    Finished
+}
+class Project {
+    constructor(public id: string, public title: string, public description: string, public people: number, public status: ProjectStatus) {
+
+    }
+}
+
+
+// Listener
+type Listener = (items: Project[]) => void;
+
+
+// Project State Management
+class ProjectState {
+    private listeners: Listener[] = [];
+    private projects: Project[] = [];
+    private static instance: ProjectState;
+
+    private constructor() {
+
+    }
+
+    static getInstance() {
+        if (this.instance) {
+            return this.instance;
+        }
+        this.instance = new ProjectState();
+        return this.instance;
+    }
+
+    addListener(listenerFn: Listener) {
+       this.listeners.push(listenerFn); 
+    }
+
+    addProject(title: string, description: string, numOfPeople: number) {
+        const newProject = new Project (
+            Math.random().toString(),
+            title,
+            description,
+            numOfPeople,
+            ProjectStatus.Active
+        );
+        this.projects.push(newProject);
+
+        for (const listenerFn of this.listeners) {
+            listenerFn(this.projects.slice());
+        }
+    }
+}
+
+// Global instance of project
+const projectState = ProjectState.getInstance();
+
+
 // Validation
 interface Validatable {
     value: string | number;
@@ -10,6 +68,7 @@ interface Validatable {
 
 function validate(validatebleInput: Validatable) {
     let isValid = true;
+    
     if (validatebleInput.required) {
         isValid = isValid && validatebleInput.value.toString().trim().length !== 0;
     }
@@ -28,6 +87,7 @@ function validate(validatebleInput: Validatable) {
     return isValid
 }
 
+/* Render the form */
 class ProjectInput {
     templateElement: HTMLTemplateElement;
     hostElement: HTMLDivElement;
@@ -73,8 +133,10 @@ class ProjectInput {
             value: +enteredPeople,
             required: true,
             min: 1,
-            max: 5
+            max: 10
         }
+
+        console.log(peopleValidatable);
 
         if (
             !validate(titleValidatable) ||
@@ -103,6 +165,7 @@ class ProjectInput {
         const userInput = this.gatherUserInput();
         if (Array.isArray(userInput)) {
             const [title, desc, people] = userInput;
+            projectState.addProject(title, desc, people);
             console.log('inputs: ', title, desc, people);
             this.clearInputs();
         }
@@ -112,9 +175,71 @@ class ProjectInput {
         this.element.addEventListener('submit', this.submitHandler.bind(this));
     }
 
+    // render the element
     private attach() {
         this.hostElement.insertAdjacentElement('afterbegin', this.element);
     }
 }
 
+/* Render project list */
+class ProjectList {
+    templateElement: HTMLTemplateElement;
+    hostElement: HTMLDivElement;
+    element: HTMLElement;
+    assignedProjects: Project[]; 
+
+    constructor(private type: 'active' | 'finished') {
+        this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
+        this.hostElement = document.getElementById('app')! as HTMLDivElement;
+        this.assignedProjects = [];
+
+        const importedNode = document.importNode(
+            this.templateElement.content, 
+            true
+        );
+        this.element = importedNode.firstElementChild as HTMLElement;
+        this.element.id = `${this.type}-projects`;
+
+        projectState.addListener((projects: Project[]) => {
+            const relevantProjects = projects.filter(prj => {
+                if (this.type === 'active') {
+                    return prj.status === ProjectStatus.Active;
+                }
+                else
+                {
+                    return prj.status === ProjectStatus.Finished;
+                }
+            });
+            this.assignedProjects = relevantProjects;
+            this.renderProjects();
+        });
+
+        this.attach();
+        this.renderContent();
+    }
+
+    private renderProjects() {
+        const listEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
+        listEl.innerHTML = '';
+        for (const prjItem of this.assignedProjects) {
+            const listItem = document.createElement('li');
+            listItem.textContent = prjItem.title;
+            listEl?.appendChild(listItem);
+        }
+    }
+
+    private renderContent() {
+        const listId = `${this.type}-projects-list`;
+        this.element.querySelector('ul')!.id = listId;
+        this.element.querySelector('h2')!.textContent = this.type.toUpperCase() + ' PROJECTS';
+    }
+
+    // render the element
+    private attach() {
+        this.hostElement.insertAdjacentElement('beforeend', this.element);
+    }
+}
+
 const projectInput = new ProjectInput();
+const activePrjList = new ProjectList('active');
+const finishedPrjList = new ProjectList('finished');
